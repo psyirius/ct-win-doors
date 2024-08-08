@@ -28,9 +28,44 @@ if (-not ([Security.Principal.WindowsPrincipal]([Security.Principal.WindowsIdent
         $args | ForEach-Object { $_ }               # Script arguments
     ) | ForEach-Object { "`"$_`"" }
 
-    Start-Process -FilePath $PwshExecutable -ArgumentList $PwshArgList -Verb RunAs
+    $ProcessParameters = @{
+        FilePath            = $PwshExecutable;
+        ArgumentList        = $PwshArgList;
+        WorkingDirectory    = $PSScriptRoot;
+        Verb                = 'RunAs';
+        PassThru            = $true;
+    }
 
-    exit
+    $process = $null
+    try {
+        $process = Start-Process @ProcessParameters
+    }
+    catch {
+        $exception = $_.Exception
+    
+        # Optional: Check for specific error messages or types
+        if ($exception.Message -like "*The operation was canceled by the user*") {
+            Write-Host "===========================================" -Foregroundcolor Red
+            Write-Host "---- This must be run as Administrator ----" -Foregroundcolor Red
+            Write-Host "------ Click 'Yes' in the UAC Prompt ------" -Foregroundcolor Red
+            Write-Host "------------------ (OR) -------------------" -Foregroundcolor Red
+            Write-Host "-- Right-Click Start -> Terminal(Admin) ---" -Foregroundcolor Red
+            Write-Host "===========================================" -Foregroundcolor Red
+        }
+        else {
+            $ErrorMessage = @(
+                "An unexpected error occurred.",
+                $exception.Message
+            ) -join "`n"
+
+            Write-Host $ErrorMessage -Foregroundcolor Red
+
+            $process.Kill()
+        }
+    }
+    finally {
+        exit
+    }
 }
 
 # Set DebugPreference based on the -Debug switch
