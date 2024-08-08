@@ -16,7 +16,8 @@ if (-not ([Security.Principal.WindowsPrincipal]([Security.Principal.WindowsIdent
     # Use the modern 'PowerShell' if available, otherwise use 'Windows PowerShell'
     if (Get-Command "pwsh" -ErrorAction SilentlyContinue) {
         $PwshExecutable = "pwsh.exe"
-    } else {
+    }
+    else {
         $PwshExecutable = "powershell.exe"
     }
 
@@ -28,10 +29,12 @@ if (-not ([Security.Principal.WindowsPrincipal]([Security.Principal.WindowsIdent
         $args | ForEach-Object { $_ }               # Script arguments
     ) | ForEach-Object { "`"$_`"" }
 
+    $WorkingDirectory = Get-Location
+
     $ProcessParameters = @{
         FilePath            = $PwshExecutable;
         ArgumentList        = $PwshArgList;
-        WorkingDirectory    = $PSScriptRoot;
+        WorkingDirectory    = $WorkingDirectory;
         Verb                = 'RunAs';
         PassThru            = $true;
     }
@@ -54,8 +57,8 @@ if (-not ([Security.Principal.WindowsPrincipal]([Security.Principal.WindowsIdent
         }
         else {
             $ErrorMessage = @(
-                "An unexpected error occurred.",
-                $exception.Message
+                "An unexpected error occurred:",
+                ($exception.Message -split ":" | Select-Object -Index 1).Trim()
             ) -join "`n"
 
             Write-Host $ErrorMessage -Foregroundcolor Red
